@@ -20,6 +20,9 @@ if(NOT WIN32)
     CXX_COMPILER_DUMPVERSION(CXX_COMPILER_VERSION)
 endif()
 
+# Option to enable AddressSanitizer
+option(ADDRESS_SANITIZER "Enable AddressSanitizer for memory error detection" OFF)
+
 if(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
     # require at least gcc 5.0
     if (CXX_COMPILER_VERSION VERSION_LESS 5.0)
@@ -28,6 +31,15 @@ if(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
     set (CMAKE_CXX_FLAGS "-Wall -Wunreachable-code -Wno-reorder -Wno-pessimizing-move -Wno-unused-result -Wno-strict-aliasing -Wno-sign-compare -Wno-unknown-pragmas -Wcast-align -lm -lrt -fopenmp -std=c++17")
     set (CMAKE_CXX_FLAGS_RELEASE "-DNDEBUG -O3 -march=native")
     set (CMAKE_CXX_FLAGS_DEBUG   "-g -DDEBUG")
+
+    # Add AddressSanitizer flags for GCC
+    if (ADDRESS_SANITIZER)
+        message(STATUS "Enabling AddressSanitizer for GCC.")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address")
+        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fsanitize=address")
+        set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address")
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address")
+    endif()
 
     find_path(NUMA_INCLUDE_DIR NAME numa.h
       HINTS $ENV{HOME}/local/include /opt/local/include /usr/local/include /usr/include)
@@ -52,9 +64,16 @@ if(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
 
 elseif(WIN32)
     if(NOT MSVC14)
-         message(FATAL_ERROR "On Windows, only MSVC version 14 are supported!") 
+        message(FATAL_ERROR "On Windows, only MSVC version 14 are supported!") 
     endif()
     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /c++17")
+
+    # Add AddressSanitizer flags for MSVC
+    if (ADDRESS_SANITIZER)
+        message(STATUS "Enabling AddressSanitizer for MSVC.")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /fsanitize=address")
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /fsanitize=address")
+    endif()
 
     message(STATUS "CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS}")
 else ()
@@ -128,4 +147,4 @@ add_subdirectory (AnnService)
 add_subdirectory (Test)
 #add_subdirectory (GPUSupport)
 add_subdirectory (Wrappers)
-add_subdirectory(bindings)
+add_subdirectory(big-ann)
